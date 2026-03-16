@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Steam | Secure Market</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#020617] text-gray-300 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-gradient-to-b from-[#020617]/95 via-[#020617]/90 to-[#020617]/80 backdrop-blur border-b border-[#1f2937] shadow-[0_10px_40px_rgba(15,23,42,0.9)] sticky top-0 z-20">
+        <div class="container mx-auto flex justify-between items-center py-4 px-4 lg:px-0">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="absolute -inset-1 rounded-full bg-[#22d3ee]/30 blur opacity-75"></div>
+                    <svg class="relative w-9 h-9 text-[#22d3ee]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-semibold text-white tracking-[0.25em] uppercase">Web3 <span class="text-[#22d3ee]">Steam</span></h1>
+                    <p class="text-xs text-gray-500 tracking-[0.22em] uppercase mt-1">Secure Escrow Marketplace</p>
+                </div>
+            </div>
+            <div class="flex gap-3 lg:gap-4 items-stretch">
+                <div class="hidden lg:flex flex-col justify-center text-right pr-4 border-r border-[#1f2937]">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em]">Network</p>
+                    <p class="text-xs text-[#22c55e] font-mono flex items-center gap-1 justify-end">
+                        <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.6)]"></span>
+                        localhost:8545
+                    </p>
+                </div>
+                <div class="bg-gradient-to-br from-[#020617] via-[#020617] to-[#0b1120] py-2.5 px-4 rounded-xl border border-[#1f2937] text-right shadow-[0_0_25px_rgba(15,23,42,0.65)]">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-1">Ваш кошелек</p>
+                    <p id="walletAddress" class="text-white font-mono text-xs lg:text-sm">Загрузка...</p>
+                </div>
+                <div class="bg-gradient-to-br from-[#22c55e]/15 via-[#4ade80]/10 to-[#22d3ee]/20 py-2.5 px-4 rounded-xl border border-[#22c55e]/40 text-right neon-border">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-1">Баланс площадки</p>
+                    <p class="font-semibold text-sm lg:text-base">
+                        <span id="marketBalance" class="text-[#a3cf06]">0.0000</span>
+                        <span class="text-[#22d3ee]">ETH</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative flex-1">
+        <div class="pointer-events-none absolute inset-0 opacity-50">
+            <div class="absolute -left-32 top-10 w-72 h-72 bg-[#22d3ee]/10 blur-3xl rounded-full"></div>
+            <div class="absolute right-0 top-1/2 w-80 h-80 bg-[#4ade80]/10 blur-3xl rounded-full"></div>
+        </div>
+
+        <div class="container mx-auto mt-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10 px-4 lg:px-0 relative z-10">
+        
+            <div class="lg:col-span-4 flex flex-col gap-5">
+                
+                <div class="bg-gradient-to-br from-[#020617] via-[#020617] to-[#020617] border border-[#1f2937] rounded-2xl p-4 relative overflow-hidden shadow-[0_25px_80px_rgba(15,23,42,0.9)]">
+                    <div class="absolute top-0 right-0 bg-[#a3cf06] text-black text-[10px] font-bold px-3 py-1 rounded-bl uppercase tracking-[0.25em] shadow-[0_10px_30px_rgba(163,207,6,0.6)]">Проверено</div>
+                    <h2 class="text-[#22d3ee] text-xs font-semibold mb-3 uppercase flex items-center gap-2 tracking-[0.25em]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Защита транзакций
+                    </h2>
+                    <p class="text-xs text-gray-500 mb-3">
+                        Все сделки проходят через зашифрованный смарт-контракт с многоуровневой защитой и полным on-chain аудитом.
+                    </p>
+                    <ul class="text-xs space-y-2 text-[#c7d5e0]">
+                        <li class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#a3cf06] animate-pulse"></span>
+                            Децентрализованный эскроу активен
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#a3cf06]"></span>
+                            Криптографическая подпись требуется
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#a3cf06]"></span>
+                            Неизменяемая запись в реестр
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-gradient-to-br from-[#020617] via-[#020617] to-[#020617] border border-[#1f2937] rounded-2xl p-4 space-y-4">
+                    <div class="flex items-center justify-between gap-3 mb-1">
+                        <h2 class="text-gray-400 text-[11px] font-semibold uppercase tracking-[0.3em]">Покупка актива</h2>
+                        <span class="inline-flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-[0.25em]">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#22d3ee]"></span>
+                            Тестовая среда
+                        </span>
+                    </div>
+                    <div class="bg-gradient-to-r from-[#020617] via-[#020617] to-[#020617] p-4 rounded-xl border border-[#1f2937] flex justify-between items-center hover:border-[#22d3ee] hover:shadow-[0_0_35px_rgba(34,211,238,0.4)] transition-all duration-200">
+                        <div class="space-y-1.5">
+                            <p class="text-[11px] text-gray-500">Среда тестирования смарт-контракта для P2P сделок.</p>
+                            <p class="text-[11px] text-[#a3cf06] mt-1.5 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                                Проверенный актив
+                            </p>
+                        </div>
+                        <button onclick="deposit()" class="bg-[#22d3ee]/10 hover:bg-[#22d3ee]/20 text-[#e5e7eb] border border-[#22d3ee]/60 px-4 py-2 rounded-lg text-xs lg:text-sm font-semibold uppercase tracking-[0.2em] transition-all shadow-[0_0_25px_rgba(34,211,238,0.45)]">
+                            ВНЕСТИ 1 ETH
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-[#020617] via-[#020617] to-[#020617] border border-[#1f2937] rounded-2xl p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-semibold text-white text-sm">Вывод средств</h3>
+                            <p class="text-[11px] text-gray-500 mt-1">Мгновенный возврат средств из эскроу обратно в кошелек.</p>
+                        </div>
+                        <button onclick="withdraw()" class="bg-transparent border border-[#f97373] text-[#fca5a5] hover:bg-[#f97373] hover:text-white px-4 py-2 rounded-lg text-xs lg:text-sm font-semibold uppercase tracking-[0.2em] transition-all">
+                            ВЫВЕСТИ
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-8 bg-[#020617] rounded-2xl border border-[#1f2937] flex flex-col shadow-[0_40px_120px_rgba(15,23,42,1)] relative overflow-hidden">
+                <div class="absolute inset-0 opacity-40 pointer-events-none">
+                    <div class="absolute -top-10 right-10 w-72 h-72 border border-dashed border-[#1f2937] rounded-full"></div>
+                    <div class="absolute bottom-0 left-10 w-64 h-64 bg-gradient-to-tr from-[#22d3ee]/20 to-transparent blur-3xl"></div>
+                </div>
+                <div class="bg-gradient-to-r from-[#020617] via-[#020617] to-[#020617] border-b border-[#1f2937] p-3 lg:p-4 flex justify-between items-center relative z-10">
+                    <h2 class="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.32em] flex items-center gap-2">
+                        <svg class="w-4 h-4 text-[#22d3ee]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Терминал протокола безопасности
+                    </h2>
+                    <div class="flex gap-2 items-center">
+                        <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-ping"></span>
+                        <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+                        <span class="text-[11px] text-[#22c55e] font-mono">УЗЕЛ СИНХРОНИЗИРОВАН</span>
+                    </div>
+                </div>
+                
+                <div id="logs" class="flex-1 overflow-y-auto font-mono text-[11px] p-5 space-y-1.5 h-[480px] relative z-10">
+                    <p class="text-[#22d3ee]">[СИСТЕМА] Web3 интерфейс безопасности инициализирован</p>
+                    <p class="text-gray-500">[СИСТЕМА] Ожидание зашифрованных полезных нагрузок транзакций...</p>
+                    <p class="text-gray-700">--------------------------------------------------</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

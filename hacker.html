@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exploit Toolkit | Web3 Steam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f1722; }
+        ::-webkit-scrollbar-thumb { background: #2a475e; }
+        ::-webkit-scrollbar-thumb:hover { background: #66c0f4; }
+        .neon-border { box-shadow: 0 0 10px rgba(102, 192, 244, 0.2); }
+        .neon-danger { box-shadow: 0 0 15px rgba(239, 68, 68, 0.25); }
+    </style>
+</head>
+<body class="bg-[#020617] text-gray-300 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-gradient-to-b from-[#020617]/95 via-[#020617]/90 to-[#020617]/80 backdrop-blur border-b border-[#1f2937] shadow-[0_10px_40px_rgba(15,23,42,0.9)] sticky top-0 z-20">
+        <div class="container mx-auto flex justify-between items-center py-4 px-4 lg:px-0">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="absolute -inset-1 rounded-full bg-[#f97373]/30 blur opacity-75"></div>
+                    <svg class="relative w-9 h-9 text-[#f97373]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-semibold text-white tracking-[0.25em] uppercase">Exploit <span class="text-[#f97373]">Toolkit</span></h1>
+                    <p class="text-xs text-gray-500 tracking-[0.22em] uppercase mt-1">Reentrancy · VulnerableMarketplace</p>
+                </div>
+            </div>
+            <div class="flex gap-3 lg:gap-4 items-stretch">
+                <div class="hidden lg:flex flex-col justify-center text-right pr-4 border-r border-[#1f2937]">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em]">Network</p>
+                    <p class="text-xs text-[#22c55e] font-mono flex items-center gap-1 justify-end">
+                        <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.6)]"></span>
+                        localhost:8545
+                    </p>
+                </div>
+                <div class="bg-gradient-to-br from-[#020617] via-[#020617] to-[#0b1120] py-2.5 px-4 rounded-xl border border-[#1f2937] text-right shadow-[0_0_25px_rgba(15,23,42,0.65)]">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-1">Attacker Wallet</p>
+                    <p id="attackerAddress" class="text-white font-mono text-xs lg:text-sm">Loading...</p>
+                </div>
+                <div class="bg-gradient-to-br from-[#f97373]/15 via-[#ef4444]/10 to-[#22d3ee]/20 py-2.5 px-4 rounded-xl border border-[#f97373]/40 text-right neon-danger">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-1">Target Balance</p>
+                    <p class="font-semibold text-sm lg:text-base">
+                        <span id="targetBalance" class="text-[#fca5a5]">0.000</span>
+                        <span class="text-[#22d3ee]">ETH</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative flex-1">
+        <div class="pointer-events-none absolute inset-0 opacity-50">
+            <div class="absolute -left-32 top-10 w-72 h-72 bg-[#f97373]/10 blur-3xl rounded-full"></div>
+            <div class="absolute right-0 top-1/2 w-80 h-80 bg-[#4ade80]/10 blur-3xl rounded-full"></div>
+        </div>
+
+        <div class="container mx-auto mt-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10 px-4 lg:px-0 relative z-10">
+
+            <div class="lg:col-span-4 flex flex-col gap-5">
+
+                <div class="bg-gradient-to-br from-[#020617] via-[#020617] to-[#020617] border border-[#1f2937] rounded-2xl p-4 relative overflow-hidden shadow-[0_25px_80px_rgba(15,23,42,0.9)]">
+                    <div class="absolute top-0 right-0 bg-[#f97373] text-white text-[10px] font-bold px-3 py-1 rounded-bl uppercase tracking-[0.25em] shadow-[0_10px_30px_rgba(249,115,115,0.5)]">
+                        Payload Ready
+                    </div>
+                    <h2 class="text-[#22d3ee] text-xs font-semibold mb-3 uppercase flex items-center gap-2 tracking-[0.25em]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                        Control Panel
+                    </h2>
+                    <p class="text-xs text-gray-500 mb-3">
+                        Вектор: рекурсивный вызов до обновления баланса. Инъекция 1.00 ETH.
+                    </p>
+                    <ul class="text-xs space-y-2 text-[#c7d5e0]">
+                        <li class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#f97373] animate-pulse"></span>
+                            Vector: Recursive call before balance update
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#f97373]"></span>
+                            Injection: 1.00 ETH
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+                            Status: <span class="text-[#22c55e] font-mono">AWAITING COMMAND</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-gradient-to-br from-[#020617] via-[#020617] to-[#020617] border border-[#1f2937] rounded-2xl p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-semibold text-white text-sm">Execute Exploit</h3>
+                            <p class="text-[11px] text-gray-500 mt-1">Запуск атаки на уязвимый контракт (только для тестирования).</p>
+                        </div>
+                        <button onclick="executeHack()" id="hackBtn" class="bg-transparent border border-[#f97373] text-[#fca5a5] hover:bg-[#f97373] hover:text-white px-4 py-2 rounded-lg text-xs lg:text-sm font-semibold uppercase tracking-[0.2em] transition-all shadow-[0_0_25px_rgba(249,115,115,0.3)]">
+                            Execute
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-8 bg-[#020617] rounded-2xl border border-[#1f2937] flex flex-col shadow-[0_40px_120px_rgba(15,23,42,1)] relative overflow-hidden">
+                <div class="absolute inset-0 opacity-40 pointer-events-none">
+                    <div class="absolute -top-10 right-10 w-72 h-72 border border-dashed border-[#1f2937] rounded-full"></div>
+                    <div class="absolute bottom-0 left-10 w-64 h-64 bg-gradient-to-tr from-[#f97373]/20 to-transparent blur-3xl"></div>
+                </div>
+                <div class="bg-gradient-to-r from-[#020617] via-[#020617] to-[#020617] border-b border-[#1f2937] p-3 lg:p-4 flex justify-between items-center relative z-10">
+                    <h2 class="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.32em] flex items-center gap-2">
+                        <svg class="w-4 h-4 text-[#22d3ee]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Execution Trace
+                    </h2>
+                    <div class="flex gap-2 items-center">
+                        <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-ping"></span>
+                        <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+                        <span class="text-[11px] text-[#22c55e] font-mono">NODE SYNCED</span>
+                    </div>
+                </div>
+
+                <div id="logs" class="flex-1 overflow-y-auto font-mono text-[11px] p-5 space-y-1.5 h-[480px] relative z-10">
+                    <p class="text-[#22d3ee]">[SYSTEM] Exploit Toolkit initialized. Target: VulnerableMarketplace</p>
+                    <p class="text-gray-500">[SYSTEM] Awaiting user input...</p>
+                    <p class="text-gray-700">--------------------------------------------------</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-[#020617] bg-gradient-to-t from-[#020617] via-[#020617] to-transparent py-4">
+        <div class="container mx-auto flex flex-col lg:flex-row items-center justify-between gap-2 px-4 lg:px-0">
+            <p class="text-[11px] text-gray-600">
+                Demo only · Local Hardhat node
+            </p>
+            <p class="text-[11px] text-gray-600 flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#f97373]"></span>
+                Reentrancy exploit · Educational
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const TARGET_MARKET = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
+        const ATTACKER_CONTRACT = "0x0116686E2291dbd5e317F47faDBFb43B599786Ef";
+
+        const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+        const hackerWallet = new ethers.Wallet("0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba", provider);
+
+        const attackerAbi = ["function attack() external payable"];
+        const attackerContract = new ethers.Contract(ATTACKER_CONTRACT, attackerAbi, hackerWallet);
+
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        function getTimestamp() {
+            const now = new Date();
+            return `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}.${now.getMilliseconds().toString().padStart(3,'0')}`;
+        }
+
+        function addLog(msg, colorClass) {
+            const logs = document.getElementById("logs");
+            const cls = colorClass || "text-[#c7d5e0]";
+            logs.innerHTML += `<p class="${cls}">[${getTimestamp()}] ${msg}</p>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function updateUI() {
+            document.getElementById("attackerAddress").innerText = hackerWallet.address.substring(0, 8) + "..." + hackerWallet.address.slice(-4);
+            try {
+                const bal = await provider.getBalance(TARGET_MARKET);
+                const eth = parseFloat(ethers.formatEther(bal)).toFixed(4);
+                document.getElementById("targetBalance").innerText = eth;
+                return parseFloat(eth);
+            } catch (e) {
+                addLog("Error reading target balance", "text-[#f97373]");
+                return 0;
+            }
+        }
+
+        async function executeHack() {
+            const btn = document.getElementById("hackBtn");
+            btn.disabled = true;
+            btn.classList.add("opacity-50", "cursor-not-allowed");
+
+            try {
+                const initialBal = await updateUI();
+                addLog(`[*] INITIATING PAYLOAD DELIVERY...`, "text-white font-bold");
+                await sleep(500);
+
+                addLog(`[*] Injecting 1.0 ETH to bypass initial require() checks...`, "text-[#e5b15a]");
+
+                const tx = await attackerContract.attack({ value: ethers.parseEther("1") });
+                addLog(`[*] Exploit transaction broadcasted. Hash: ${tx.hash.substring(0,20)}...`, "text-[#fca5a5]");
+
+                await tx.wait();
+
+                addLog(`\n[!] DECODING ATOMIC TRANSACTION TRACE:`, "text-white font-bold mt-2");
+                await sleep(800);
+
+                for (let i = 1; i <= Math.floor(initialBal); i++) {
+                    addLog(` -> Triggering market.withdraw()`, "text-[#f97373] pl-4");
+                    await sleep(300);
+                    addLog(` -> EVM Call intercepted by fallback()`, "text-[#e5b15a] pl-8");
+                    await sleep(300);
+                    addLog(` -> RE-ENTRY SUCCESS: Drained 1.0 ETH (Balance update skipped!)`, "text-[#22c55e] pl-8 font-bold");
+                    await sleep(400);
+                }
+
+                addLog(`\n[+] TRANSACTION MINED.`, "text-white");
+                addLog(`[+] ALL FUNDS EXFILTRATED SUCCESSFULLY.`, "text-[#22c55e] font-bold");
+                updateUI();
+            } catch (e) {
+                addLog(`[x] EXPLOIT FAILED: ${e.message}`, "text-gray-500");
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove("opacity-50", "cursor-not-allowed");
+            }
+        }
+
+        updateUI();
+        document.getElementById("attackerAddress").innerText = hackerWallet.address.substring(0, 8) + "..." + hackerWallet.address.slice(-4);
+    </script>
+</body>
+</html>
