@@ -5,13 +5,9 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "node scripts/start-local.js",
+    "start": "npm run compile && node scripts/start-local.js",
     "compile": "hardhat compile",
-    "node": "hardhat node",
-    "deploy": "node scripts/deploy.js",
-    "setup-hack": "node scripts/setup_hack.js",
-    "simulate": "node scripts/simulate.js",
-    "test": "node test/run-tests.js"
+    "test": "npm run compile && node test/run-tests.js"
   },
   "keywords": [
     "hardhat",

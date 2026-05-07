@@ -10,9 +10,14 @@ const abi = [
     "function deposit() public payable",
     "function withdraw() public",
     "function balances(address) public view returns (uint256)",
-    "function getMarketplaceBalance() public view returns (uint256)"
+    "function getMarketplaceBalance() public view returns (uint256)",
+    "event DepositRecorded(address indexed account, uint256 amount, uint256 newBalance)",
+    "event WithdrawalPrepared(address indexed account, uint256 amount)",
+    "event WithdrawalSent(address indexed account, uint256 amount)"
 ];
+
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
+const contractInterface = new ethers.Interface(abi);
 
 const logsDiv = document.getElementById("logs");
 const walletAddress = document.getElementById("walletAddress");
@@ -21,12 +26,16 @@ const nodeStatus = document.getElementById("nodeStatus");
 const depositBtn = document.getElementById("depositBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
 
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function getTimestamp() {
     return new Date().toLocaleTimeString("ru-RU", { hour12: false });
+}
+
+function formatEth(value) {
+    return `${Number(ethers.formatEther(value)).toFixed(4)} ETH`;
+}
+
+function short(value) {
+    return `${value.slice(0, 10)}...${value.slice(-6)}`;
 }
 
 function addLog(message, type = "system") {
@@ -42,19 +51,47 @@ function setBusy(isBusy) {
     withdrawBtn.disabled = isBusy;
 }
 
+async function readState() {
+    const userDeposit = await contract.balances(wallet.address);
+    const contractEth = await provider.getBalance(CONTRACT_ADDRESS);
+    const blockNumber = await provider.getBlockNumber();
+    return { userDeposit, contractEth, blockNumber };
+}
+
 async function updateUI() {
     walletAddress.textContent = `${wallet.address.slice(0, 8)}...${wallet.address.slice(-4)}`;
 
     try {
-        await provider.getBlockNumber();
+        const state = await readState();
         nodeStatus.textContent = "online";
-
-        const userBalance = await contract.balances(wallet.address);
-        marketBalance.textContent = Number(ethers.formatEther(userBalance)).toFixed(4);
+        marketBalance.textContent = Number(ethers.formatEther(state.userDeposit)).toFixed(4);
     } catch (error) {
         nodeStatus.textContent = "offline";
         addLog("Не удалось прочитать контракт. Запусти npm start и обнови страницу.", "error");
         console.error(error);
+    }
+}
+
+async function logReceipt(receipt) {
+    const block = await provider.getBlock(receipt.blockNumber);
+    addLog(`Транзакция попала в блок #${receipt.blockNumber}.`, "success");
+    addLog(`Block hash: ${short(block.hash)}; tx index: ${receipt.index}; gas: ${receipt.gasUsed.toString()}.`, "muted");
+
+    for (const rawLog of receipt.logs) {
+        try {
+            const parsed = contractInterface.parseLog(rawLog);
+            if (parsed.name === "DepositRecorded") {
+                addLog(`Событие DepositRecorded: записан депозит ${formatEth(parsed.args.amount)}, новый баланс ${formatEth(parsed.args.newBalance)}.`, "success");
+            }
+            if (parsed.name === "WithdrawalPrepared") {
+                addLog(`Событие WithdrawalPrepared: контракт обнулил внутренний баланс перед переводом ${formatEth(parsed.args.amount)}.`, "warning");
+            }
+            if (parsed.name === "WithdrawalSent") {
+                addLog(`Событие WithdrawalSent: ETH отправлен кошельку ${short(parsed.args.account)}.`, "success");
+            }
+        } catch {
+            // Skip logs from other contracts.
+        }
     }
 }
 
@@ -63,14 +100,19 @@ async function deposit() {
 
     try {
         addLog("--------------------------------------------------", "muted");
-        addLog("Отправляем deposit() на 1 ETH.", "system");
-        await sleep(150);
+        const before = await readState();
+        addLog(`До операции: депозит пользователя ${formatEth(before.userDeposit)}, ETH на контракте ${formatEth(before.contractEth)}, текущий блок #${before.blockNumber}.`, "system");
+        addLog(`Формируем транзакцию deposit(value=1 ETH): from ${short(wallet.address)} -> contract ${short(CONTRACT_ADDRESS)}.`, "system");
 
         const txResponse = await contract.deposit({ value: ethers.parseEther("1") });
-        addLog(`Транзакция отправлена: ${txResponse.hash.slice(0, 26)}...`, "warning");
+        addLog(`RPC принял транзакцию. Hash: ${txResponse.hash}.`, "warning");
+        addLog("Ждем майнинга: Hardhat включает транзакцию в следующий блок.", "system");
 
         const receipt = await txResponse.wait();
-        addLog(`Депозит записан в блок #${receipt.blockNumber}.`, "success");
+        await logReceipt(receipt);
+
+        const after = await readState();
+        addLog(`После записи: депозит пользователя ${formatEth(after.userDeposit)}, ETH на контракте ${formatEth(after.contractEth)}.`, "success");
         await updateUI();
     } catch (error) {
         addLog(`deposit() отклонен: ${error.shortMessage || error.message}`, "error");
@@ -85,14 +127,19 @@ async function withdraw() {
 
     try {
         addLog("--------------------------------------------------", "muted");
-        addLog("Запускаем withdraw(): баланс обнуляется до перевода ETH.", "system");
-        await sleep(150);
+        const before = await readState();
+        addLog(`До операции: депозит пользователя ${formatEth(before.userDeposit)}, ETH на контракте ${formatEth(before.contractEth)}, текущий блок #${before.blockNumber}.`, "system");
+        addLog("Формируем withdraw(): контракт проверит баланс, запишет 0, потом отправит ETH.", "system");
 
         const txResponse = await contract.withdraw();
-        addLog(`Транзакция отправлена: ${txResponse.hash.slice(0, 26)}...`, "warning");
+        addLog(`RPC принял транзакцию. Hash: ${txResponse.hash}.`, "warning");
+        addLog("Ждем блок: состояние изменится только после майнинга.", "system");
 
         const receipt = await txResponse.wait();
-        addLog(`Средства возвращены кошельку в блоке #${receipt.blockNumber}.`, "success");
+        await logReceipt(receipt);
+
+        const after = await readState();
+        addLog(`После обработки: депозит пользователя ${formatEth(after.userDeposit)}, ETH на контракте ${formatEth(after.contractEth)}.`, "success");
         await updateUI();
     } catch (error) {
         addLog(`withdraw() отклонен: ${error.shortMessage || error.message}`, "error");
@@ -105,6 +152,8 @@ async function withdraw() {
 depositBtn.addEventListener("click", deposit);
 withdrawBtn.addEventListener("click", withdraw);
 
-addLog("Интерфейс подключается к локальной сети Hardhat.", "system");
-addLog("Готов к вызовам deposit() и withdraw().", "muted");
+addLog(`Подключение к Hardhat RPC: ${RPC_URL}.`, "system");
+addLog(`SecureMarketplace: ${CONTRACT_ADDRESS}.`, "muted");
+addLog("Журнал покажет: отправку tx -> блок -> события контракта -> новое состояние.", "muted");
 updateUI();
+setInterval(updateUI, 3000);

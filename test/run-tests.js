@@ -126,7 +126,7 @@ async function testSecureMarketStopsAttacker() {
   }
 
   const attacker = await deployArtifact(
-    "artifacts/contracts/Attacker.sol/Attacker.json",
+    "artifacts/contracts/Vulnerable.sol/Attacker.json",
     hacker,
     [marketAddress],
   );
