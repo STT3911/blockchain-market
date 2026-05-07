@@ -1,99 +1,110 @@
-var CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const config = window.DEMO_CONFIG ?? {};
+const CONTRACT_ADDRESS = config.secureMarketplace ?? "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const RPC_URL = config.rpcUrl ?? "http://127.0.0.1:8545";
 
-var provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
-var privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-var wallet = new ethers.Wallet(privateKey, provider);
+const provider = new ethers.JsonRpcProvider(RPC_URL, undefined, { cacheTimeout: 0 });
+const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+const wallet = new ethers.Wallet(privateKey, provider);
 
-var abi = [
+const abi = [
     "function deposit() public payable",
     "function withdraw() public",
     "function balances(address) public view returns (uint256)",
-    "function paused() public view returns (bool)",
-    "function admin() public view returns (address)",
     "function getMarketplaceBalance() public view returns (uint256)"
 ];
-var contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
+const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
+
+const logsDiv = document.getElementById("logs");
+const walletAddress = document.getElementById("walletAddress");
+const marketBalance = document.getElementById("marketBalance");
+const nodeStatus = document.getElementById("nodeStatus");
+const depositBtn = document.getElementById("depositBtn");
+const withdrawBtn = document.getElementById("withdrawBtn");
 
 function sleep(ms) {
-    return new Promise(function(resolve) { return setTimeout(resolve, ms); });
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getTimestamp() {
-    var now = new Date();
-    return [
-        now.getHours().toString().padStart(2, "0"),
-        now.getMinutes().toString().padStart(2, "0"),
-        now.getSeconds().toString().padStart(2, "0")
-    ].join(":");
+    return new Date().toLocaleTimeString("ru-RU", { hour12: false });
 }
 
-function addLog(message, type) {
-    var logsDiv = document.getElementById("logs");
-    var colorClass = "text-[#cbd5e1]";
-
-    if (type === "success") colorClass = "text-[#86efac]";
-    else if (type === "warning") colorClass = "text-[#facc15]";
-    else if (type === "error") colorClass = "text-[#fca5a5]";
-    else if (type === "system") colorClass = "text-[#93c5fd]";
-    else if (type === "muted") colorClass = "text-[#64748b]";
-
-    logsDiv.innerHTML += '<p class="' + colorClass + '">[' + getTimestamp() + "] " + message + "</p>";
+function addLog(message, type = "system") {
+    const line = document.createElement("p");
+    line.className = `log-line log-${type}`;
+    line.textContent = `[${getTimestamp()}] ${message}`;
+    logsDiv.appendChild(line);
     logsDiv.scrollTop = logsDiv.scrollHeight;
 }
 
+function setBusy(isBusy) {
+    depositBtn.disabled = isBusy;
+    withdrawBtn.disabled = isBusy;
+}
+
 async function updateUI() {
-    document.getElementById("walletAddress").innerText =
-        wallet.address.substring(0, 8) + "..." + wallet.address.slice(-4);
+    walletAddress.textContent = `${wallet.address.slice(0, 8)}...${wallet.address.slice(-4)}`;
 
     try {
-        var userBalance = await contract.balances(wallet.address);
-        document.getElementById("marketBalance").innerText =
-            parseFloat(ethers.formatEther(userBalance)).toFixed(4);
-    } catch (e) {
-        addLog("Не удалось прочитать контракт. Проверьте npx hardhat node и адрес в app.js.", "error");
+        await provider.getBlockNumber();
+        nodeStatus.textContent = "online";
+
+        const userBalance = await contract.balances(wallet.address);
+        marketBalance.textContent = Number(ethers.formatEther(userBalance)).toFixed(4);
+    } catch (error) {
+        nodeStatus.textContent = "offline";
+        addLog("Не удалось прочитать контракт. Запусти npm start и обнови страницу.", "error");
+        console.error(error);
     }
 }
 
 async function deposit() {
+    setBusy(true);
+
     try {
         addLog("--------------------------------------------------", "muted");
-        addLog("Формируем вызов deposit() на 1 ETH.", "system");
-        await sleep(250);
+        addLog("Отправляем deposit() на 1 ETH.", "system");
+        await sleep(150);
 
-        var txResponse = await contract.deposit({ value: ethers.parseEther("1") });
-        addLog("Транзакция отправлена: " + txResponse.hash.substring(0, 26) + "...", "warning");
+        const txResponse = await contract.deposit({ value: ethers.parseEther("1") });
+        addLog(`Транзакция отправлена: ${txResponse.hash.slice(0, 26)}...`, "warning");
 
-        var receipt = await txResponse.wait();
-        addLog("Депозит записан в блок #" + receipt.blockNumber + ".", "success");
+        const receipt = await txResponse.wait();
+        addLog(`Депозит записан в блок #${receipt.blockNumber}.`, "success");
         await updateUI();
     } catch (error) {
-        var errorMsg = error.shortMessage || error.message || "Неизвестная ошибка";
-        addLog("Операция deposit() отклонена: " + errorMsg, "error");
+        addLog(`deposit() отклонен: ${error.shortMessage || error.message}`, "error");
         console.error(error);
+    } finally {
+        setBusy(false);
     }
 }
 
 async function withdraw() {
+    setBusy(true);
+
     try {
         addLog("--------------------------------------------------", "muted");
-        addLog("Запускаем withdraw(): проверка баланса, блокировка reentrancy, затем перевод.", "system");
-        await sleep(250);
+        addLog("Запускаем withdraw(): баланс обнуляется до перевода ETH.", "system");
+        await sleep(150);
 
-        var txResponse = await contract.withdraw();
-        addLog("Транзакция отправлена: " + txResponse.hash.substring(0, 26) + "...", "warning");
+        const txResponse = await contract.withdraw();
+        addLog(`Транзакция отправлена: ${txResponse.hash.slice(0, 26)}...`, "warning");
 
-        var receipt = await txResponse.wait();
-        addLog("Средства возвращены кошельку в блоке #" + receipt.blockNumber + ".", "success");
+        const receipt = await txResponse.wait();
+        addLog(`Средства возвращены кошельку в блоке #${receipt.blockNumber}.`, "success");
         await updateUI();
     } catch (error) {
-        var errorMsg = error.shortMessage || error.message || "Неизвестная ошибка";
-        addLog("Операция withdraw() отклонена: " + errorMsg, "error");
+        addLog(`withdraw() отклонен: ${error.shortMessage || error.message}`, "error");
         console.error(error);
+    } finally {
+        setBusy(false);
     }
 }
 
-provider.on("block", async function(blockNumber) {
-    addLog("Новый блок #" + blockNumber + " в локальной сети.", "system");
-});
+depositBtn.addEventListener("click", deposit);
+withdrawBtn.addEventListener("click", withdraw);
 
+addLog("Интерфейс подключается к локальной сети Hardhat.", "system");
+addLog("Готов к вызовам deposit() и withdraw().", "muted");
 updateUI();

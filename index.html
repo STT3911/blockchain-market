@@ -3,108 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Escrow | Blockchain Demo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <title>Secure Escrow</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen bg-[#f4f7fb] text-[#172033]">
-    <header class="border-b border-[#d9e2ef] bg-white/95 backdrop-blur">
-        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
-            <div class="flex items-center gap-3">
-                <div class="grid h-11 w-11 place-items-center rounded-lg bg-[#2563eb] text-white">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 4v5c0 4.2-2.7 7.8-7 9-4.3-1.2-7-4.8-7-9V7l7-4z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-xl font-semibold tracking-normal text-[#111827]">Secure Escrow</h1>
-                    <p class="text-sm text-[#667085]">Учебная панель для контракта SecureMarketplace</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div class="rounded-lg border border-[#d9e2ef] bg-[#f8fafc] px-3 py-2">
-                    <p class="text-xs font-medium uppercase text-[#667085]">Сеть</p>
-                    <p class="mt-1 flex items-center gap-2 font-mono text-sm text-[#15803d]">
-                        <span class="h-2 w-2 rounded-full bg-[#22c55e]"></span>
-                        localhost:8545
-                    </p>
-                </div>
-                <div class="rounded-lg border border-[#d9e2ef] bg-[#f8fafc] px-3 py-2">
-                    <p class="text-xs font-medium uppercase text-[#667085]">Кошелек</p>
-                    <p id="walletAddress" class="mt-1 font-mono text-sm text-[#111827]">Загрузка...</p>
-                </div>
-                <div class="rounded-lg border border-[#b7d7c4] bg-[#f0fdf4] px-3 py-2">
-                    <p class="text-xs font-medium uppercase text-[#3f7f5f]">Ваш депозит</p>
-                    <p class="mt-1 text-sm font-semibold text-[#166534]"><span id="marketBalance">0.0000</span> ETH</p>
-                </div>
-            </div>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Local Hardhat demo</p>
+            <h1>Secure Escrow</h1>
         </div>
+        <nav class="nav">
+            <a href="index.html" aria-current="page">Защита</a>
+            <a href="hacker.html">Атака</a>
+        </nav>
     </header>
 
-    <main class="mx-auto grid max-w-6xl gap-5 px-4 py-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <section class="space-y-5">
-            <div class="rounded-lg border border-[#d9e2ef] bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase text-[#2563eb]">Защищенный контракт</p>
-                        <h2 class="mt-2 text-lg font-semibold text-[#111827]">Баланс обновляется до перевода</h2>
-                    </div>
-                    <span class="rounded-md bg-[#dcfce7] px-2.5 py-1 text-xs font-medium text-[#166534]">CEI</span>
+    <main class="layout">
+        <section class="panel summary">
+            <div class="status-grid">
+                <div>
+                    <span class="label">Сеть</span>
+                    <strong class="mono"><span class="dot"></span>127.0.0.1:8545</strong>
                 </div>
-                <div class="mt-4 space-y-3 text-sm text-[#475467]">
-                    <div class="flex gap-3">
-                        <span class="mt-1 h-2 w-2 rounded-full bg-[#2563eb]"></span>
-                        <p>Функция <code>withdraw()</code> сначала обнуляет баланс пользователя, затем отправляет ETH.</p>
-                    </div>
-                    <div class="flex gap-3">
-                        <span class="mt-1 h-2 w-2 rounded-full bg-[#2563eb]"></span>
-                        <p>Модификатор <code>nonReentrant</code> блокирует повторный вход во время вывода.</p>
-                    </div>
-                    <div class="flex gap-3">
-                        <span class="mt-1 h-2 w-2 rounded-full bg-[#2563eb]"></span>
-                        <p>Контракт можно поставить на паузу через <code>togglePause()</code> от имени администратора.</p>
-                    </div>
+                <div>
+                    <span class="label">Кошелек</span>
+                    <strong id="walletAddress" class="mono">Загрузка...</strong>
+                </div>
+                <div>
+                    <span class="label">Ваш депозит</span>
+                    <strong><span id="marketBalance">0.0000</span> ETH</strong>
                 </div>
             </div>
 
-            <div class="rounded-lg border border-[#d9e2ef] bg-white p-5 shadow-sm">
-                <h2 class="text-base font-semibold text-[#111827]">Операции</h2>
-                <p class="mt-1 text-sm text-[#667085]">Эти кнопки вызывают реальные методы <code>deposit()</code> и <code>withdraw()</code> локального контракта.</p>
-                <div class="mt-5 grid gap-3">
-                    <button onclick="deposit()" class="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#2563eb] px-4 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] focus:outline-none focus:ring-2 focus:ring-[#93c5fd]">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5"></path>
-                        </svg>
-                        Внести 1 ETH
-                    </button>
-                    <button onclick="withdraw()" class="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd5e1] bg-white px-4 text-sm font-semibold text-[#172033] transition hover:bg-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-[#cbd5e1]">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-6-6l6 6-6 6"></path>
-                        </svg>
-                        Вывести депозит
-                    </button>
-                </div>
+            <div class="divider"></div>
+
+            <h2>Контракт с защитой от reentrancy</h2>
+            <p>
+                Баланс пользователя обнуляется до отправки ETH, а повторный вход в
+                <code>withdraw()</code> блокируется простым mutex.
+            </p>
+
+            <ul class="checklist">
+                <li>Checks-Effects-Interactions соблюден.</li>
+                <li><code>nonReentrant</code> не дает вызвать вывод повторно.</li>
+                <li>Администратор может остановить операции через паузу.</li>
+            </ul>
+
+            <div class="actions">
+                <button id="depositBtn" class="primary" type="button">Внести 1 ETH</button>
+                <button id="withdrawBtn" class="secondary" type="button">Вывести депозит</button>
             </div>
         </section>
 
-        <section class="min-h-[560px] rounded-lg border border-[#d9e2ef] bg-[#0f172a] shadow-sm">
-            <div class="flex flex-col gap-3 border-b border-[#25324a] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <section class="panel console-panel">
+            <div class="console-head">
                 <div>
-                    <p class="text-xs font-semibold uppercase text-[#93c5fd]">Журнал транзакций</p>
-                    <h2 class="mt-1 text-lg font-semibold text-white">SecureMarketplace trace</h2>
+                    <span class="label">Журнал транзакций</span>
+                    <h2>SecureMarketplace trace</h2>
                 </div>
-                <p class="font-mono text-xs text-[#86efac]">node synced</p>
+                <span id="nodeStatus" class="pill">подключение</span>
             </div>
-            <div id="logs" class="h-[500px] overflow-y-auto p-5 font-mono text-xs leading-6">
-                <p class="text-[#93c5fd]">[system] Интерфейс подключается к локальной сети Hardhat.</p>
-                <p class="text-[#94a3b8]">[system] Готов к отправке deposit() и withdraw().</p>
-                <p class="text-[#475569]">--------------------------------------------------</p>
-            </div>
+            <div id="logs" class="console" aria-live="polite"></div>
         </section>
     </main>
 
+    <script src="node_modules/ethers/dist/ethers.umd.min.js"></script>
+    <script src="local-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

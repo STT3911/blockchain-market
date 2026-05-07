@@ -1,18 +1,18 @@
-const { ethers } = require("hardhat");
+import { deployArtifact, getWallet } from "./common.js";
 
 async function main() {
-    console.log("Запуск ЗАЩИЩЕННОЙ торговой площадки...");
-    const Marketplace = await ethers.getContractFactory("SecureMarketplace");
-    const marketplace = await Marketplace.deploy();
-    await marketplace.waitForDeployment();
-    
-    const address = await marketplace.getAddress();
-    console.log(`✅ Защищенная площадка успешно развернута!`);
-    console.log(`Адрес контракта: ${address}`);
-    console.log(`\nВСТАВЬ ЭТОТ АДРЕС В ФАЙЛ app.js!`);
+  const deployer = await getWallet("deployer");
+  const marketplace = await deployArtifact(
+    "artifacts/contracts/SecureMarketplace.sol/SecureMarketplace.json",
+    deployer,
+  );
+  const address = await marketplace.getAddress();
+
+  console.log("SecureMarketplace deployed");
+  console.log(`CONTRACT_ADDRESS=${address}`);
 }
 
 main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
+  console.error(error.stack ?? error.message);
+  process.exitCode = 1;
 });

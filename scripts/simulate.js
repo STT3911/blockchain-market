@@ -1,54 +1,43 @@
-const { ethers } = require("hardhat");
+import { ethers } from "ethers";
+import { deployArtifact, formatEth, getWallet, provider, resetNode } from "./common.js";
 
 async function main() {
-    console.log("==================================================");
-    console.log("=== СИМУЛЯЦИЯ ТОРГОВОЙ ПЛОЩАДКИ WEB3 ЗАПУЩЕНА ===");
-    console.log("==================================================\n");
+  await resetNode();
 
-    const [deployer, honestUser1, honestUser2, hacker] = await ethers.getSigners();
+  const deployer = await getWallet("deployer");
+  const victims = [await getWallet("user1"), await getWallet("user2"), await getWallet("user3")];
+  const hacker = await getWallet("hacker");
 
-    console.log("[ШАГ 1] Запуск смарт-контракта площадки...");
-    const Marketplace = await ethers.getContractFactory("VulnerableMarketplace");
-    const marketplace = await Marketplace.deploy();
-    await marketplace.waitForDeployment();
-    const marketAddress = await marketplace.getAddress();
-    console.log(`Площадка успешно работает по адресу: ${marketAddress}\n`);
+  console.log("=== Reentrancy simulation ===");
 
-    console.log("[ШАГ 2] Честные пользователи пополняют баланс (для покупки скинов/игр)...");
-    await marketplace.connect(honestUser1).deposit({ value: ethers.parseEther("5") });
-    console.log(" - Пользователь 1 внес 5 ETH");
-    await marketplace.connect(honestUser2).deposit({ value: ethers.parseEther("5") });
-    console.log(" - Пользователь 2 внес 5 ETH");
+  const market = await deployArtifact(
+    "artifacts/contracts/Vulnerable.sol/VulnerableMarket.json",
+    deployer,
+  );
+  const marketAddress = await market.getAddress();
+  console.log(`VulnerableMarket: ${marketAddress}`);
 
-    let marketBal = await ethers.provider.getBalance(marketAddress);
-    console.log(`💲 Текущий баланс площадки: ${ethers.formatEther(marketBal)} ETH\n`);
+  for (const victim of victims) {
+    await (await market.connect(victim).deposit({ value: ethers.parseEther("2") })).wait();
+  }
+  console.log(`Seeded target balance: ${formatEth(await provider.getBalance(marketAddress))}`);
 
-    console.log("[ШАГ 3] Хакер готовит атаку...");
-    const Attacker = await ethers.getContractFactory("Attacker");
-    const attackerContract = await Attacker.connect(hacker).deploy(marketAddress);
-    await attackerContract.waitForDeployment();
-    const attackerAddress = await attackerContract.getAddress();
-    console.log(`Вредоносный смарт-контракт развернут по адресу: ${attackerAddress}\n`);
+  const attacker = await deployArtifact(
+    "artifacts/contracts/Vulnerable.sol/Attacker.json",
+    hacker,
+    [marketAddress],
+  );
+  const attackerAddress = await attacker.getAddress();
+  console.log(`Attacker: ${attackerAddress}`);
 
-    console.log("!!! ВНИМАНИЕ: ЗАПУСК АТАКИ ПОВТОРНОГО ВХОДА (REENTRANCY) !!!");
-    console.log("Хакер закидывает 1 ETH и мгновенно запрашивает возврат, запуская бесконечный цикл...\n");
-    
-    const tx = await attackerContract.connect(hacker).attack({ value: ethers.parseEther("1") });
-    await tx.wait();
+  await (await attacker.connect(hacker).attack({ value: ethers.parseEther("1") })).wait();
 
-    console.log("==================================================");
-    console.log("=== ИТОГИ ХАКЕРСКОЙ АТАКИ ===");
-    console.log("==================================================");
-    
-    marketBal = await ethers.provider.getBalance(marketAddress);
-    const hackerStolenBal = await ethers.provider.getBalance(attackerAddress);
-
-    console.log(`Остаток средств на площадке: ${ethers.formatEther(marketBal)} ETH`);
-    console.log(`Баланс хакерского контракта (украдено): ${ethers.formatEther(hackerStolenBal)} ETH`);
-    console.log("\nВЫВОД: Из-за ошибки в логике смарт-контракта (деньги отправлялись до изменения баланса в базе), хакер смог выкачать все средства честных пользователей в рамках одной транзакции!");
+  console.log("");
+  console.log(`Target balance after attack: ${formatEth(await provider.getBalance(marketAddress))}`);
+  console.log(`Attacker contract balance: ${formatEth(await provider.getBalance(attackerAddress))}`);
 }
 
 main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
+  console.error(error.stack ?? error.message);
+  process.exitCode = 1;
 });

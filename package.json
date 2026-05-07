@@ -1,0 +1,31 @@
+{
+  "name": "blockchain-market",
+  "version": "1.0.0",
+  "description": "Educational blockchain marketplace with reentrancy attack demonstrations",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "start": "node scripts/start-local.js",
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "deploy": "node scripts/deploy.js",
+    "setup-hack": "node scripts/setup_hack.js",
+    "simulate": "node scripts/simulate.js",
+    "test": "node test/run-tests.js"
+  },
+  "keywords": [
+    "hardhat",
+    "solidity",
+    "security",
+    "reentrancy"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "hardhat": "^3.3.0"
+  },
+  "dependencies": {
+    "@adraffy/ens-normalize": "^1.10.1",
+    "ethers": "^6.7.0"
+  }
+}
